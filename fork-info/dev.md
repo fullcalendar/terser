@@ -32,12 +32,13 @@ tests that directly cover the fork-only options:
 
 - `compress.assume_mangled`
 - `compress.string_inline_aggressiveness`
+- `compress.string_inline_lte_length`
 
 Use it during iteration whenever those options, sizing logic, or inline
 threshold behavior changes. It checks the important fork contracts: default
 settings are byte-identical to stock behavior, `assume_mangled` only changes
 size estimation for mangleable names, globals stay unshortened, and string
-inline aggressiveness only biases repeated string constants.
+inline controls only affect repeated string constants.
 
 Before handing off larger changes, also run:
 

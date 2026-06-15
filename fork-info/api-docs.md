@@ -1,7 +1,7 @@
 # Extra Terser Compress Options
 
-This build of Terser adds two non-standard options to the `compress` object,
-on top of everything in upstream Terser. Both are **off by default** (their
+This build of Terser adds three non-standard options to the `compress` object,
+on top of everything in upstream Terser. All three are **off by default** (their
 defaults are exact no-ops), so existing configs behave unchanged until you opt
 in.
 
@@ -12,6 +12,7 @@ await minify(code, {
   compress: {
     assume_mangled: true,             // size identifiers as if a mangle pass will run
     string_inline_aggressiveness: 2,  // lean into gzip-friendly string inlining
+    string_inline_lte_length: 9,      // force-inline strings up to this length
   },
   mangle: false,
 });
@@ -23,6 +24,7 @@ await minify(code, {
 |---|---|---|---|
 | `assume_mangled` | boolean | `false` | When compressing **without** mangling, make size-based decisions as if names will be mangled later. |
 | `string_inline_aggressiveness` | number | `1` | Bias toward (or away from) inlining repeated **string** constants. `> 1` inlines more. |
+| `string_inline_lte_length` | number | `-1` | Force-inline repeated **string** constants whose value length is at most this number. |
 
 ---
 
@@ -125,25 +127,65 @@ minimizes the gzipped output.
 
 ---
 
+## `string_inline_lte_length`
+
+**Type:** `number` · **Default:** `-1`
+
+Forces Terser to inline a repeated **string** constant when the string value's
+length is less than or equal to the configured threshold, bypassing the normal
+size comparison.
+
+```js
+await minify(code, {
+  compress: { string_inline_lte_length: 9 },
+});
+```
+
+This option is checked before `string_inline_aggressiveness`. If the string
+meets the threshold, it is inlined immediately. If it does not meet the
+threshold, Terser falls back to the usual size gate, including any
+`string_inline_aggressiveness` bias.
+
+**Behavior notes**
+
+- **Strings only.** Numeric constants, functions, single-use values, and `this`
+  aliases are unaffected.
+- **The length is the JavaScript string value length.** It does not include
+  surrounding quotes or extra bytes needed to escape the string when printed.
+- **The default is an exact no-op.** `-1` means no string can pass the
+  threshold unless you opt in.
+- **This can grow pre-gzip output quickly.** It intentionally ignores how many
+  times the string will be duplicated, so tune it against real gzip/brotli
+  output.
+
+**When to use it:** when measurement shows that strings at or below a known
+length should always be duplicated for better compressed size, even when
+Terser's raw byte model says to keep the shared binding.
+
+---
+
 ## Using them together
 
-The two options are independent and commonly combined in a compress-only first
-pass:
+The string options run in a fixed order: `string_inline_lte_length` can
+force-inline a string first; otherwise `string_inline_aggressiveness` adjusts
+the normal size threshold. They can be combined with `assume_mangled` in a
+compress-only first pass:
 
 ```js
 await minify(librarySource, {
   compress: {
     assume_mangled: true,
     string_inline_aggressiveness: 2,
+    string_inline_lte_length: 9,
   },
   mangle: false,   // a downstream tool mangles later
 });
 ```
 
 `assume_mangled` keeps the compress-pass decisions consistent with the eventual
-mangled output; `string_inline_aggressiveness` adds a deliberate, gzip-aware lean
-toward inlining repeated strings. Neither renames anything, so the pass-1 output
-stays readable for whatever runs next.
+mangled output; the string options add deliberate, gzip-aware pressure toward
+inlining repeated strings. None of these options rename anything, so the pass-1
+output stays readable for whatever runs next.
 
 > These options are specific to this Terser build and are **not** part of
 > upstream Terser. If you replace this build with stock Terser, remove them from

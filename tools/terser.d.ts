@@ -61,6 +61,7 @@ export interface CompressOptions {
     sequences?: boolean | number;
     side_effects?: boolean;
     string_inline_aggressiveness?: number;
+    string_inline_lte_length?: number;
     switches?: boolean;
     toplevel?: boolean;
     top_retain?: null | string | string[] | RegExp;
