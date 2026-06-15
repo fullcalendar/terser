@@ -1,4 +1,4 @@
-# Terser Mod Plan: `assume_mangled` & `string_inline_aggressiveness`
+# Terser Mod Plan: `assume_mangled` & `inline_string_aggressiveness`
 
 > **For the implementing agent (Claude Code / Codex):** This adds two new
 > `compress` options to **terser 5.48.0**. Apply as a minimal patch via
@@ -29,7 +29,7 @@ problems with pass 1 motivate this mod:
    inlined string as `N × literal_bytes`, ignoring that gzip's LZ77 dedups
    repeats (≈ one copy + cheap back-references). It therefore keeps small
    repeated strings as shared consts when inlining them would be *smaller after
-   gzip*. `string_inline_aggressiveness` biases that specific decision toward
+   gzip*. `inline_string_aggressiveness` biases that specific decision toward
    inlining.
 
 ### Internals the changes rely on (terser 5.48.0)
@@ -136,7 +136,7 @@ Leave the existing `mangle_options = undefined;` reset at the bottom in place.
 
 ---
 
-## 3. Feature 2 — `compress.string_inline_aggressiveness`
+## 3. Feature 2 — `compress.inline_string_aggressiveness`
 
 **Type:** number (multiplier). **Default:** `1` (exact no-op). **Effect:**
 discounts the apparent size of a **string** constant when deciding whether to
@@ -158,7 +158,7 @@ flips small repeated strings (near the threshold) while leaving large strings
 `defaults(...)` block as Feature 1:
 
 ```js
-string_inline_aggressiveness: 1,
+inline_string_aggressiveness: 1,
 ```
 
 **(b) `lib/compress/inline.js` — import `AST_String`.** It is **not** currently
@@ -174,7 +174,7 @@ if (replace) {
     const name_length = self.size(compressor);
     let replace_size = replace.size(compressor);
 
-    const string_scale = compressor.option("string_inline_aggressiveness");
+    const string_scale = compressor.option("inline_string_aggressiveness");
     if (string_scale !== 1 && replace instanceof AST_String) {
         replace_size = replace_size / string_scale;
     }
@@ -208,11 +208,11 @@ if (replace) {
 
 | File | Location | Change |
 |---|---|---|
-| `lib/compress/index.js` | `defaults({…})` block, ~line 224 | Add `assume_mangled: false,` and `string_inline_aggressiveness: 1,` |
+| `lib/compress/index.js` | `defaults({…})` block, ~line 224 | Add `assume_mangled: false,` and `inline_string_aggressiveness: 1,` |
 | `lib/compress/index.js` | after `this._mangle_options = …`, ~line 335 | Add `this._assume_mangled_options = …` precompute |
 | `lib/size.js` | `AST_Node.prototype.size`, ~line 94 | OR in `compressor._assume_mangled_options` when setting `mangle_options` |
 | `lib/compress/inline.js` | AST import block, ~line 87 | Add `AST_String` to imports |
-| `lib/compress/inline.js` | `inline_into_symbolref` multi-use branch, ~line 301–314 | `let replace_size`; divide by `string_inline_aggressiveness` for `AST_String` |
+| `lib/compress/inline.js` | `inline_into_symbolref` multi-use branch, ~line 301–314 | `let replace_size`; divide by `inline_string_aggressiveness` for `AST_String` |
 
 No other files. `AST_Symbol.prototype._size` and `_mangle_options` semantics are
 **unchanged**.
@@ -224,7 +224,7 @@ No other files. `AST_Symbol.prototype._size` and `_mangle_options` semantics are
 Use a Node harness (`terser` + `zlib`) mirroring these checks.
 
 ### Regression guard (must pass first)
-With neither option set (or `assume_mangled:false`, `string_inline_aggressiveness:1`),
+With neither option set (or `assume_mangled:false`, `inline_string_aggressiveness:1`),
 output is **byte-identical** to stock terser across a sample corpus.
 
 ### Feature 1
@@ -255,7 +255,7 @@ const code = `function f(a){
 }
 window.f = f;`;
 ```
-- Compare `string_inline_aggressiveness: 1` vs `> 1` (e.g. `1.5`, `3`): the higher
+- Compare `inline_string_aggressiveness: 1` vs `> 1` (e.g. `1.5`, `3`): the higher
   value should inline the string where the default keeps the `const`.
 - gzip (`zlib.gzipSync`) both outputs and **assert the inlined variant is smaller
   post-gzip** for the small-string case — that's the real success metric.
@@ -283,7 +283,7 @@ window.f = f;`;
   by the downstream mangle pass (terser has no literal-extraction transform).
   That's fine here because inlining is the goal and is stable through pass 2.
 - **Naming:** snake_case to match terser house style
-  (`assume_mangled`, `string_inline_aggressiveness`).
+  (`assume_mangled`, `inline_string_aggressiveness`).
 - **Versioning:** pinned to terser 5.48.0. If bumping terser, re-verify the line
   anchors (`size.js` ambient capture, `index.js` defaults + `_mangle_options`,
   `inline.js` multi-use branch) — they may shift.

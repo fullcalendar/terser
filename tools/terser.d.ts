@@ -60,9 +60,9 @@ export interface CompressOptions {
     reduce_vars?: boolean;
     sequences?: boolean | number;
     side_effects?: boolean;
-    number_inline_aggressiveness?: number;
-    string_inline_aggressiveness?: number;
-    string_inline_lte_length?: number;
+    inline_number_aggressiveness?: number;
+    inline_string_aggressiveness?: number;
+    inline_string_lte_length?: number;
     switches?: boolean;
     toplevel?: boolean;
     top_retain?: null | string | string[] | RegExp;

@@ -11,9 +11,9 @@ import { minify } from "terser";
 await minify(code, {
   compress: {
     assume_mangled: true,             // size identifiers as if a mangle pass will run
-    number_inline_aggressiveness: 2,  // lean into number constant inlining
-    string_inline_aggressiveness: 2,  // lean into gzip-friendly string inlining
-    string_inline_lte_length: 9,      // force-inline strings up to this length
+    inline_number_aggressiveness: 2,  // lean into number constant inlining
+    inline_string_aggressiveness: 2,  // lean into gzip-friendly string inlining
+    inline_string_lte_length: 9,      // force-inline strings up to this length
   },
   mangle: false,
 });
@@ -24,9 +24,9 @@ await minify(code, {
 | Option | Type | Default | Summary |
 |---|---|---|---|
 | `assume_mangled` | boolean | `false` | When compressing **without** mangling, make size-based decisions as if names will be mangled later. |
-| `number_inline_aggressiveness` | number | `1` | Bias toward (or away from) inlining repeated **number** constants. `> 1` inlines more. |
-| `string_inline_aggressiveness` | number | `1` | Bias toward (or away from) inlining repeated **string** constants. `> 1` inlines more. |
-| `string_inline_lte_length` | number | `-1` | Force-inline repeated **string** constants whose value length is at most this number. |
+| `inline_number_aggressiveness` | number | `1` | Bias toward (or away from) inlining repeated **number** constants. `> 1` inlines more. |
+| `inline_string_aggressiveness` | number | `1` | Bias toward (or away from) inlining repeated **string** constants. `> 1` inlines more. |
+| `inline_string_lte_length` | number | `-1` | Force-inline repeated **string** constants whose value length is at most this number. |
 
 ---
 
@@ -80,14 +80,14 @@ mangled. If you compress and mangle in the same Terser call, you don't need it.
 
 ---
 
-## `number_inline_aggressiveness`
+## `inline_number_aggressiveness`
 
 **Type:** `number` · **Default:** `1`
 
 Controls how eagerly Terser inlines a **number constant that is used in several
 places**, versus keeping it as one shared variable.
 
-This is the numeric counterpart to `string_inline_aggressiveness`. Terser still
+This is the numeric counterpart to `inline_string_aggressiveness`. Terser still
 uses its normal size comparison, but this option scales the estimated cost of
 emitting the repeated number literal:
 
@@ -97,7 +97,7 @@ emitting the repeated number literal:
 
 ```js
 await minify(code, {
-  compress: { number_inline_aggressiveness: 2 },
+  compress: { inline_number_aggressiveness: 2 },
 });
 ```
 
@@ -115,11 +115,11 @@ await minify(code, {
 **When to use it:** when measurement shows that duplicating repeated numeric
 constants beats keeping shared bindings in your real bundle. Numeric literals
 do not get the same gzip win as strings, so tune this more cautiously than
-`string_inline_aggressiveness`.
+`inline_string_aggressiveness`.
 
 ---
 
-## `string_inline_aggressiveness`
+## `inline_string_aggressiveness`
 
 **Type:** `number` · **Default:** `1`
 
@@ -143,7 +143,7 @@ This option lets you bias that decision:
 
 ```js
 await minify(code, {
-  compress: { string_inline_aggressiveness: 2 },
+  compress: { inline_string_aggressiveness: 2 },
 });
 ```
 
@@ -168,7 +168,7 @@ minimizes the gzipped output.
 
 ---
 
-## `string_inline_lte_length`
+## `inline_string_lte_length`
 
 **Type:** `number` · **Default:** `-1`
 
@@ -178,14 +178,14 @@ size comparison.
 
 ```js
 await minify(code, {
-  compress: { string_inline_lte_length: 9 },
+  compress: { inline_string_lte_length: 9 },
 });
 ```
 
-This option is checked before `string_inline_aggressiveness`. If the string
+This option is checked before `inline_string_aggressiveness`. If the string
 meets the threshold, it is inlined immediately. If it does not meet the
 threshold, Terser falls back to the usual size gate, including any
-`string_inline_aggressiveness` bias.
+`inline_string_aggressiveness` bias.
 
 **Behavior notes**
 
@@ -207,8 +207,8 @@ Terser's raw byte model says to keep the shared binding.
 
 ## Using them together
 
-The string options run in a fixed order: `string_inline_lte_length` can
-force-inline a string first; otherwise `string_inline_aggressiveness` adjusts
+The string options run in a fixed order: `inline_string_lte_length` can
+force-inline a string first; otherwise `inline_string_aggressiveness` adjusts
 the normal size threshold. They can be combined with `assume_mangled` in a
 compress-only first pass:
 
@@ -216,9 +216,9 @@ compress-only first pass:
 await minify(librarySource, {
   compress: {
     assume_mangled: true,
-    number_inline_aggressiveness: 2,
-    string_inline_aggressiveness: 2,
-    string_inline_lte_length: 9,
+    inline_number_aggressiveness: 2,
+    inline_string_aggressiveness: 2,
+    inline_string_lte_length: 9,
   },
   mangle: false,   // a downstream tool mangles later
 });

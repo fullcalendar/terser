@@ -18,9 +18,9 @@ describe("fullcalendar compress options", function() {
         const explicit_result = await minify(code, {
             compress: {
                 assume_mangled: false,
-                number_inline_aggressiveness: 1,
-                string_inline_aggressiveness: 1,
-                string_inline_lte_length: -1,
+                inline_number_aggressiveness: 1,
+                inline_string_aggressiveness: 1,
+                inline_string_lte_length: -1,
             },
             mangle: false,
         });
@@ -97,11 +97,11 @@ describe("fullcalendar compress options", function() {
         window.f = f;`;
 
         const default_result = await minify(code, {
-            compress: { string_inline_aggressiveness: 1 },
+            compress: { inline_string_aggressiveness: 1 },
             mangle: false,
         });
         const aggressive_result = await minify(code, {
-            compress: { string_inline_aggressiveness: 1.5 },
+            compress: { inline_string_aggressiveness: 1.5 },
             mangle: false,
         });
 
@@ -119,7 +119,7 @@ describe("fullcalendar compress options", function() {
         );
     });
 
-    it("forces strings at or below string_inline_lte_length to inline", async function() {
+    it("forces strings at or below inline_string_lte_length to inline", async function() {
         const code = `function f(a) {
             const s = "abcdefghi";
             return a ? s : (a + s + s + s);
@@ -131,17 +131,17 @@ describe("fullcalendar compress options", function() {
             mangle: false,
         });
         const below_threshold_result = await minify(code, {
-            compress: { string_inline_lte_length: 8 },
+            compress: { inline_string_lte_length: 8 },
             mangle: false,
         });
         const threshold_result = await minify(code, {
-            compress: { string_inline_lte_length: 9 },
+            compress: { inline_string_lte_length: 9 },
             mangle: false,
         });
         const threshold_beats_aggressiveness_result = await minify(code, {
             compress: {
-                string_inline_aggressiveness: 0.01,
-                string_inline_lte_length: 9,
+                inline_string_aggressiveness: 0.01,
+                inline_string_lte_length: 9,
             },
             mangle: false,
         });
@@ -158,7 +158,7 @@ describe("fullcalendar compress options", function() {
         assert.strictEqual(threshold_beats_aggressiveness_result.code, threshold_result.code);
     });
 
-    it("does not apply string_inline_lte_length to longer strings or numeric constants", async function() {
+    it("does not apply inline_string_lte_length to longer strings or numeric constants", async function() {
         const short_string_code = "function f(a){const s=\"ab\";return a?s:a+s+s+s}window.f=f;";
         const long_string_code = "function f(a){const s=\"abcdefghi\";return a?s:a+s+s+s}window.f=f;";
         const numeric_code = "function f(a){const n=123456789;return a?n:a+n+n+n}window.f=f;";
@@ -168,7 +168,7 @@ describe("fullcalendar compress options", function() {
             mangle: false,
         });
         const threshold_short_string = await minify(short_string_code, {
-            compress: { string_inline_lte_length: 1 },
+            compress: { inline_string_lte_length: 1 },
             mangle: false,
         });
         const default_long_string = await minify(long_string_code, {
@@ -176,7 +176,7 @@ describe("fullcalendar compress options", function() {
             mangle: false,
         });
         const threshold_long_string = await minify(long_string_code, {
-            compress: { string_inline_lte_length: 8 },
+            compress: { inline_string_lte_length: 8 },
             mangle: false,
         });
         const default_numeric = await minify(numeric_code, {
@@ -184,7 +184,7 @@ describe("fullcalendar compress options", function() {
             mangle: false,
         });
         const threshold_numeric = await minify(numeric_code, {
-            compress: { string_inline_lte_length: 9 },
+            compress: { inline_string_lte_length: 9 },
             mangle: false,
         });
 
@@ -193,7 +193,7 @@ describe("fullcalendar compress options", function() {
         assert.strictEqual(threshold_numeric.code, default_numeric.code);
     });
 
-    it("does not apply string_inline_aggressiveness to numeric constants or this aliases", async function() {
+    it("does not apply inline_string_aggressiveness to numeric constants or this aliases", async function() {
         const numeric_code = "function f(a){const n=12;return a?n:a+n+n+n}window.f=f;";
         const this_code = "function f(){var self=this;return [self,self,self,self]}window.f=f;";
 
@@ -202,7 +202,7 @@ describe("fullcalendar compress options", function() {
             mangle: false,
         });
         const aggressive_numeric = await minify(numeric_code, {
-            compress: { string_inline_aggressiveness: 3 },
+            compress: { inline_string_aggressiveness: 3 },
             mangle: false,
         });
         const default_this = await minify(this_code, {
@@ -210,7 +210,7 @@ describe("fullcalendar compress options", function() {
             mangle: false,
         });
         const aggressive_this = await minify(this_code, {
-            compress: { string_inline_aggressiveness: 3 },
+            compress: { inline_string_aggressiveness: 3 },
             mangle: false,
         });
 
@@ -222,11 +222,11 @@ describe("fullcalendar compress options", function() {
         const code = "function f(a){const n=123456789;return a?n:a+n+n+n}window.f=f;";
 
         const default_result = await minify(code, {
-            compress: { number_inline_aggressiveness: 1 },
+            compress: { inline_number_aggressiveness: 1 },
             mangle: false,
         });
         const aggressive_result = await minify(code, {
-            compress: { number_inline_aggressiveness: 3 },
+            compress: { inline_number_aggressiveness: 3 },
             mangle: false,
         });
 
@@ -240,7 +240,7 @@ describe("fullcalendar compress options", function() {
         );
     });
 
-    it("does not apply number_inline_aggressiveness to strings or this aliases", async function() {
+    it("does not apply inline_number_aggressiveness to strings or this aliases", async function() {
         const string_code = "function f(a){const s=\"ab\";return a?s:a+s+s+s}window.f=f;";
         const this_code = "function f(){var self=this;return [self,self,self,self]}window.f=f;";
 
@@ -249,7 +249,7 @@ describe("fullcalendar compress options", function() {
             mangle: false,
         });
         const aggressive_string = await minify(string_code, {
-            compress: { number_inline_aggressiveness: 3 },
+            compress: { inline_number_aggressiveness: 3 },
             mangle: false,
         });
         const default_this = await minify(this_code, {
@@ -257,7 +257,7 @@ describe("fullcalendar compress options", function() {
             mangle: false,
         });
         const aggressive_this = await minify(this_code, {
-            compress: { number_inline_aggressiveness: 3 },
+            compress: { inline_number_aggressiveness: 3 },
             mangle: false,
         });
 
