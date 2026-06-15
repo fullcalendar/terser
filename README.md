@@ -1,3 +1,5 @@
+THIS IS A FORK. [SEE FORK INFO](./fork-info/).
+
 <h1><img src="https://terser.org/img/terser-banner-logo.png" alt="Terser" width="400"></h1>
 
   [![NPM Version][npm-image]][npm-url]
