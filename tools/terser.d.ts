@@ -17,6 +17,7 @@ export interface ParseOptions {
 
 export interface CompressOptions {
     arguments?: boolean;
+    assume_mangled?: boolean;
     arrows?: boolean;
     booleans_as_integers?: boolean;
     booleans?: boolean;
@@ -59,6 +60,7 @@ export interface CompressOptions {
     reduce_vars?: boolean;
     sequences?: boolean | number;
     side_effects?: boolean;
+    string_inline_aggressiveness?: number;
     switches?: boolean;
     toplevel?: boolean;
     top_retain?: null | string | string[] | RegExp;
