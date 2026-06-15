@@ -31,14 +31,15 @@ The `test:fullcalendar` script gives this fork a stable, quick command for the
 tests that directly cover the fork-only options:
 
 - `compress.assume_mangled`
+- `compress.number_inline_aggressiveness`
 - `compress.string_inline_aggressiveness`
 - `compress.string_inline_lte_length`
 
 Use it during iteration whenever those options, sizing logic, or inline
 threshold behavior changes. It checks the important fork contracts: default
 settings are byte-identical to stock behavior, `assume_mangled` only changes
-size estimation for mangleable names, globals stay unshortened, and string
-inline controls only affect repeated string constants.
+size estimation for mangleable names, globals stay unshortened, and literal
+inline controls only affect their matching constant types.
 
 Before handing off larger changes, also run:
 

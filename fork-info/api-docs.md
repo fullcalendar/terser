@@ -1,7 +1,7 @@
 # Extra Terser Compress Options
 
-This build of Terser adds three non-standard options to the `compress` object,
-on top of everything in upstream Terser. All three are **off by default** (their
+This build of Terser adds four non-standard options to the `compress` object,
+on top of everything in upstream Terser. All four are **off by default** (their
 defaults are exact no-ops), so existing configs behave unchanged until you opt
 in.
 
@@ -11,6 +11,7 @@ import { minify } from "terser";
 await minify(code, {
   compress: {
     assume_mangled: true,             // size identifiers as if a mangle pass will run
+    number_inline_aggressiveness: 2,  // lean into number constant inlining
     string_inline_aggressiveness: 2,  // lean into gzip-friendly string inlining
     string_inline_lte_length: 9,      // force-inline strings up to this length
   },
@@ -23,6 +24,7 @@ await minify(code, {
 | Option | Type | Default | Summary |
 |---|---|---|---|
 | `assume_mangled` | boolean | `false` | When compressing **without** mangling, make size-based decisions as if names will be mangled later. |
+| `number_inline_aggressiveness` | number | `1` | Bias toward (or away from) inlining repeated **number** constants. `> 1` inlines more. |
 | `string_inline_aggressiveness` | number | `1` | Bias toward (or away from) inlining repeated **string** constants. `> 1` inlines more. |
 | `string_inline_lte_length` | number | `-1` | Force-inline repeated **string** constants whose value length is at most this number. |
 
@@ -75,6 +77,45 @@ await minify(code, {
 
 **When to use it:** any compress-without-mangle pass whose output will later be
 mangled. If you compress and mangle in the same Terser call, you don't need it.
+
+---
+
+## `number_inline_aggressiveness`
+
+**Type:** `number` · **Default:** `1`
+
+Controls how eagerly Terser inlines a **number constant that is used in several
+places**, versus keeping it as one shared variable.
+
+This is the numeric counterpart to `string_inline_aggressiveness`. Terser still
+uses its normal size comparison, but this option scales the estimated cost of
+emitting the repeated number literal:
+
+- `> 1` — treat repeated numbers as cheaper to inline ⇒ **more** inlining.
+- `1` — stock Terser behavior (default).
+- `< 1` — inline repeated numbers **less**.
+
+```js
+await minify(code, {
+  compress: { number_inline_aggressiveness: 2 },
+});
+```
+
+**Behavior notes**
+
+- **Numbers only.** String constants, functions, single-use values, and `this`
+  aliases are unaffected — only number constants used more than once are
+  influenced.
+- **It only shifts the threshold.** Terser still compares the cost of repeating
+  the number against the cost of keeping the shared binding; this option just
+  biases that comparison.
+- **It is based on printed literal size, not numeric value.** A large numeric
+  value can still be cheap if it prints compactly.
+
+**When to use it:** when measurement shows that duplicating repeated numeric
+constants beats keeping shared bindings in your real bundle. Numeric literals
+do not get the same gzip win as strings, so tune this more cautiously than
+`string_inline_aggressiveness`.
 
 ---
 
@@ -175,6 +216,7 @@ compress-only first pass:
 await minify(librarySource, {
   compress: {
     assume_mangled: true,
+    number_inline_aggressiveness: 2,
     string_inline_aggressiveness: 2,
     string_inline_lte_length: 9,
   },
@@ -183,8 +225,8 @@ await minify(librarySource, {
 ```
 
 `assume_mangled` keeps the compress-pass decisions consistent with the eventual
-mangled output; the string options add deliberate, gzip-aware pressure toward
-inlining repeated strings. None of these options rename anything, so the pass-1
+mangled output; the inline options add deliberate pressure toward inlining
+repeated literal constants. None of these options rename anything, so the pass-1
 output stays readable for whatever runs next.
 
 > These options are specific to this Terser build and are **not** part of

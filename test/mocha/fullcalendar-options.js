@@ -18,6 +18,7 @@ describe("fullcalendar compress options", function() {
         const explicit_result = await minify(code, {
             compress: {
                 assume_mangled: false,
+                number_inline_aggressiveness: 1,
                 string_inline_aggressiveness: 1,
                 string_inline_lte_length: -1,
             },
@@ -214,6 +215,53 @@ describe("fullcalendar compress options", function() {
         });
 
         assert.strictEqual(aggressive_numeric.code, default_numeric.code);
+        assert.strictEqual(aggressive_this.code, default_this.code);
+    });
+
+    it("inlines repeated numbers more aggressively when configured", async function() {
+        const code = "function f(a){const n=123456789;return a?n:a+n+n+n}window.f=f;";
+
+        const default_result = await minify(code, {
+            compress: { number_inline_aggressiveness: 1 },
+            mangle: false,
+        });
+        const aggressive_result = await minify(code, {
+            compress: { number_inline_aggressiveness: 3 },
+            mangle: false,
+        });
+
+        assert.strictEqual(
+            default_result.code,
+            "function f(a){const n=123456789;return a?n:a+n+n+n}window.f=f;"
+        );
+        assert.strictEqual(
+            aggressive_result.code,
+            "function f(a){return a?123456789:a+123456789+123456789+123456789}window.f=f;"
+        );
+    });
+
+    it("does not apply number_inline_aggressiveness to strings or this aliases", async function() {
+        const string_code = "function f(a){const s=\"ab\";return a?s:a+s+s+s}window.f=f;";
+        const this_code = "function f(){var self=this;return [self,self,self,self]}window.f=f;";
+
+        const default_string = await minify(string_code, {
+            compress: {},
+            mangle: false,
+        });
+        const aggressive_string = await minify(string_code, {
+            compress: { number_inline_aggressiveness: 3 },
+            mangle: false,
+        });
+        const default_this = await minify(this_code, {
+            compress: {},
+            mangle: false,
+        });
+        const aggressive_this = await minify(this_code, {
+            compress: { number_inline_aggressiveness: 3 },
+            mangle: false,
+        });
+
+        assert.strictEqual(aggressive_string.code, default_string.code);
         assert.strictEqual(aggressive_this.code, default_this.code);
     });
 });
